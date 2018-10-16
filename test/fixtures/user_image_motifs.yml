@@ -1,0 +1,11 @@
+# Read about fixtures at http://api.rubyonrails.org/classes/ActiveRecord/FixtureSet.html
+
+one:
+  user_image_id: 1
+  motif_id: 1
+  percent: 1.5
+
+two:
+  user_image_id: 1
+  motif_id: 1
+  percent: 1.5
