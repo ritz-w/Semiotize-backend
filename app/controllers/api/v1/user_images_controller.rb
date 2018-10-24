@@ -5,8 +5,13 @@ class Api::V1::UserImagesController < ApplicationController
     end
 
     def show
-        @user_image = UserImage.find(params[:index])
+        @user_image = UserImage.find(params[:id])
         render json: @user_image
+    end
+
+    def three
+        @user_images = UserImage.last(4)
+        render json: @user_images
     end
     
     def upload

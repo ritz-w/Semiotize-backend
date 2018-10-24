@@ -8,6 +8,7 @@ SFMOMA_url_3 = "https://www.sfmoma.org/api/collection/artworks/?type=photograph&
 SFMOMA_url_4 = "https://www.sfmoma.org/api/collection/artworks/?type=photograph&has_images=true&department=Photography&page_size=20&page=4"
 SFMOMA_url_5 = "https://www.sfmoma.org/api/collection/artworks/?type=photograph&has_images=true&department=Photography&page_size=20&page=5"
 
+SFMOMA_url_6 = "https://www.sfmoma.org/api/collection/artworks/?type=photograph&has_images=true&department=Photography&page_size=20&page=7"
 
 SFMOMA_headers = {
     "Authorization" => "Token 5c6a3bfa479a3f383f4d3ced4c75c0a6c51fbe02"
@@ -16,14 +17,14 @@ SFMOMA_headers = {
 ARTSY_url = "https://api.artsy.net/api/artists?gene_id=50356575ab7498000200000f&total_count=1&size=100"
 RMIAPI_url = "https://api.art.rmngp.fr/v1/works?api_key=2b5f0f78c49d4fc7ca65cf71e55720f40aea49f5c68030fdd5e0de79331014cc&facets%5Bcollections%5D=Photographies&facets%5Bperiods%5D=Europe+%28p%C3%A9riode%29+-+p%C3%A9riode+contemporaine+de+1914+%C3%A0+nos+jours&per_page=100"
 FINNAT_url = "http://kokoelmat.fng.fi/api/v2?apikey=jn36avefund5l&q=search:photograph&format=dc-json"
-HARVARD_url = "https://api.harvardartmuseums.org/object?apikey=5bccaf40-c23b-11e8-9f63-d310d7ffc861&classification=17&technique=123&size=100&hasimage=1&page=5"
+HARVARD_url = "https://api.harvardartmuseums.org/object?apikey=5bccaf40-c23b-11e8-9f63-d310d7ffc861&classification=17&technique=123&size=100&hasimage=1&page=9"
 
 #Start SFMOMA API, retrieved pages 1-5 for 100 entries
 def callSFMOMA
-    response = HTTParty.get(SFMOMA_url_5, :headers => SFMOMA_headers)
+    response = HTTParty.get(SFMOMA_url_6, :headers => SFMOMA_headers)
     artists_data = response["results"].map do |result|
-        !result["artists"][0]["artist"]["name_display"].include?("Unknown") ? 
-        result["artists"][0]["artist"]["name_display"] : null
+        !result["artists"][0]["artist"]["name_display"].include?("Unknown") && result["images"].length > 0 ? 
+        result["artists"][0]["artist"]["name_display"] : nil
     end
     unique_artists = artists_data.uniq
 
@@ -32,20 +33,24 @@ def callSFMOMA
     end
     
     artworks_data = response["results"].map do |result|
-        !result["artists"][0]["artist"]["name_display"].include?("Unknown") ? 
-        {
-            title: result["title"]["display"],
-            date: result["date"]["display"].to_i,
-            image_url: result["images"][0]["public_image"],
-            artist: Artist.find_by(name: result["artists"][0]["artist"]["name_display"]),
-            collection: "San Francisco Museum of Modern Art"
-        } : null
+        if (!result["artists"][0]["artist"]["name_display"].include?("Unknown") && result["images"].length > 0) 
+            {
+                title: result["title"]["display"],
+                date: result["date"]["display"].to_i,
+                image_url: result["images"][0]["public_image"],
+                artist: Artist.find_by(name: result["artists"][0]["artist"]["name_display"]),
+                collection: "San Francisco Museum of Modern Art"
+            }
+        end
     end
 
     artworks_data.each do |artwork|
         Artwork.create(artwork)
     end 
 end
+
+
+
 
 #Start RMI API, retrieved page 1 for 59 entries
 def callRMIAPI
@@ -119,6 +124,7 @@ def callHARVARD
     end
 end
 
+
 def callFINNNatGallery
     response = HTTParty.get(FINNAT_url)
     artist_names = response["descriptionSet"].map do |result|
@@ -154,7 +160,7 @@ def callFINNNatGallery
 end
 
 def seedMotifs
-    Artwork.where(id: 201..305).each do |artwork|
+    Artwork.where(id: 424..462).each do |artwork|
         clarifai_motifs = Clarifai::Rails::Detector.new(artwork.image_url).image.concepts_with_percent
         motif_names = clarifai_motifs.keys
 
@@ -166,7 +172,7 @@ def seedMotifs
 end
 
 def seedArtistBios
-    Artist.all.each do |artist|
+    Artist.where(id: 139..195).each do |artist|
     page = Wikipedia.find(artist.name)
         if !!page.summary 
             Artist.find(artist.id).update(bio: page.summary)
@@ -177,5 +183,8 @@ end
 def editEntries
     byebug
 end
+
+
+
 
 editEntries
