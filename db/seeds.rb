@@ -18,6 +18,40 @@ ARTSY_url = "https://api.artsy.net/api/artists?gene_id=50356575ab7498000200000f&
 RMIAPI_url = "https://api.art.rmngp.fr/v1/works?api_key=2b5f0f78c49d4fc7ca65cf71e55720f40aea49f5c68030fdd5e0de79331014cc&facets%5Bcollections%5D=Photographies&facets%5Bperiods%5D=Europe+%28p%C3%A9riode%29+-+p%C3%A9riode+contemporaine+de+1914+%C3%A0+nos+jours&per_page=100"
 FINNAT_url = "http://kokoelmat.fng.fi/api/v2?apikey=jn36avefund5l&q=search:photograph&format=dc-json"
 HARVARD_url = "https://api.harvardartmuseums.org/object?apikey=5bccaf40-c23b-11e8-9f63-d310d7ffc861&classification=17&technique=123&size=100&hasimage=1&page=9"
+BROOKLYN_url = "https://www.brooklynmuseum.org/api/v2/object?medium=Chromogenic photograph&object_year_begin=1960&has_images=1"
+
+BROOKLYN_headers = {
+    "api_key" => "k6CdBTleKYbYlDZrkK4jMnrbblWeaQ7h"
+}
+#Start Brooklyn MUseum API, retrieved pages 1 for 24 entries
+def callBrooklyn
+    response = HTTParty.get(BROOKLYN_url, :headers => BROOKLYN_headers)
+    artists_data = response["data"].map do |result|
+        result["artists"][0]["name"]
+    end
+    unique_artists = artists_data.uniq
+
+    unique_artists.each do |artist|
+        Artist.find_or_create_by(name: artist)
+    end
+    
+    artworks_data = response["data"].map do |result|
+            {
+                title: result["title"],
+                date: result["object_date"].to_i,
+                image_url: 'http://cdn2.brooklynmuseum.org/images/opencollection/objects/size4/' + result["primary_image"],
+                artist: Artist.find_by(name: result["artists"][0]["name"]),
+                collection: "Brooklyn Museum"
+            }
+    end
+
+    artworks_data.each do |artwork|
+        Artwork.create(artwork)
+    end 
+end
+
+
+
 
 #Start SFMOMA API, retrieved pages 1-5 for 100 entries
 def callSFMOMA
@@ -160,7 +194,7 @@ def callFINNNatGallery
 end
 
 def seedMotifs
-    Artwork.where(id: 424..462).each do |artwork|
+    Artwork.where(id: 475..486).each do |artwork|
         clarifai_motifs = Clarifai::Rails::Detector.new(artwork.image_url).image.concepts_with_percent
         motif_names = clarifai_motifs.keys
 
@@ -172,7 +206,7 @@ def seedMotifs
 end
 
 def seedArtistBios
-    Artist.where(id: 139..195).each do |artist|
+    Artist.where(id: 206..215).each do |artist|
     page = Wikipedia.find(artist.name)
         if !!page.summary 
             Artist.find(artist.id).update(bio: page.summary)
@@ -185,6 +219,13 @@ def editEntries
 end
 
 
+def correctURLs
+    Artwork.where(collection: "Brooklyn Museum").each do |artwork|
+        artwork.image_url.include?("http://") ? 
+        nil : artwork.update(image_url: 'http://cdn2.brooklynmuseum.org/images/opencollection/objects/size3/' + artwork.image_url)
+    end
+end
 
 
-editEntries
+seedMotifs
+seedArtistBios

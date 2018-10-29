@@ -6,6 +6,8 @@ Rails.application.routes.draw do
       get '/collections/kiasma', to: 'collections#kiasma' 
       get '/collections/harvard', to: 'collections#harvard' 
       get '/collections/rmngp', to: 'collections#rmngp' 
+      get '/collections/brooklyn', to: 'collections#brooklyn' 
+
 
       resources :artists
       resources :artworks

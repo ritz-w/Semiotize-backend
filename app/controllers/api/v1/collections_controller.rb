@@ -34,6 +34,15 @@ class Api::V1::CollectionsController < ApplicationController
         end
         render json: @artists, each_serializer: CollectionSerializer
     end
+
+    def brooklyn
+        @artists = []
+        Artist.all.each do |artist|
+            artist.artworks.first.collection.include?("Brooklyn Museum") ?
+            @artists << artist : nil
+        end
+        render json: @artists, each_serializer: CollectionSerializer
+    end
  
  end
  
